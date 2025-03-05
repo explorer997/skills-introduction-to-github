@@ -1,0 +1,37 @@
+目的是为了做一个滤波器，带宽控制在250HZ，下面这部分内容是最终的代码。接下来会对这部分内容做一些总结。
+#include <stdio.h>
+#include <string.h>
+
+#define FILTER_ORDER 8  // 8阶滤波器
+
+// 8阶加权卷积滤波器系数
+const float filter_coeffs[FILTER_ORDER + 1] = {
+    0.310474593593428, 0.309776996677140, 0.317745964712084,
+    0.231617677672646, 0.0917288843026473, -0.0398970522811780,
+    -0.119567820214105, -0.172149417435263, 0.0702701729726005
+};
+
+// 滤波缓冲区，存储最近的输入数据
+float filter_buffer[FILTER_ORDER + 1] = {0};
+
+// 加权卷积滤波器实现
+float apply_convolution_filter(float new_sample) {
+    // 移动数据，最新数据插入最前面
+    memmove(&filter_buffer[1], &filter_buffer[0], FILTER_ORDER * sizeof(float));
+    filter_buffer[0] = new_sample;
+
+    // 计算卷积滤波器输出
+    float output = 0.0f;
+    for (int i = 0; i <= FILTER_ORDER; i++) {
+        output += filter_coeffs[i] * filter_buffer[i];
+    }
+    return output;
+}
+
+void process_gyro_data(float *Temp_Gyro, float *Gyro_out) {
+    // 交叉补偿和温度补偿后，应用卷积滤波器
+    Gyro_out[0] = apply_convolution_filter(-Temp_Gyro[1] * GYRO_SCALE);
+    Gyro_out[1] = Temp_Gyro[0] * GYRO_SCALE;
+    Gyro_out[2] = Temp_Gyro[2] * GYRO_SCALE;
+}
+滤波器公式为：
